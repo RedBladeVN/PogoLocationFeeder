@@ -17,126 +17,103 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
+using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.Caching;
 using Newtonsoft.Json;
 using PogoLocationFeeder.Config;
 using PogoLocationFeeder.Helper;
-using PogoLocationFeeder.Repository;
 
 namespace PogoLocationFeeder.Writers
 {
     public class ClientWriter
     {
-        private readonly List<TcpClient> _arrSocket = new List<TcpClient>();
-        public TcpListener Listener;
         public static readonly ClientWriter Instance = new ClientWriter();
-        private ClientWriter() { }
-        public void StartNet(int port)
-        {
-            Log.Plain("PogoLocationFeeder is brought to you via https://github.com/5andr0/PogoLocationFeeder");
-            Log.Plain("This software is 100% free and open-source.\n");
-            Log.Plain("Please consider donating to if you like what we are doing!.");
-            Log.Plain("You can find payment details on our GitHub page.\n");
 
-            Log.Info("Application starting...");
+        private MemoryCache cache = new MemoryCache("PokemonMemoryCache");
+        private HttpListener httpListener = new HttpListener();
+
+        private ClientWriter()
+        {
+        }
+
+        public async void StartNet(int port)
+        {
             try
             {
-                Listener = new TcpListener(IPAddress.Any, port);
-                Listener.Start();
+                httpListener = new HttpListener();
+                httpListener.Prefixes.Add(string.Format("http://localhost:{0}/", port));
+                httpListener.Start();
+
+                await Task.Factory.StartNew(() => StartAccept());
             }
             catch (SocketException e)
             {
                 Log.Fatal($"Port {port} is already in use!", e);
                 throw e;
             }
-
-            StartAccept();
         }
 
-        private void StartAccept()
+        private async void StartAccept()
         {
-            Listener.BeginAcceptTcpClient(HandleAsyncConnection, Listener);
-        }
-
-        private void HandleAsyncConnection(IAsyncResult res)
-        {
-            StartAccept();
-            var client = Listener.EndAcceptTcpClient(res);
-            if (client != null && IsConnected(client.Client))
+            while (!GlobalSettings.ThreadPause)
             {
-                _arrSocket.Add(client);
-                Log.Info($"New connection from {GetIp(client.Client)}");
+                HttpListenerContext context = await httpListener.GetContextAsync();
+
+                Log.Info($"New request from {context.Request.UserHostAddress}");
+
+                await Task.Factory.StartNew(() => HandleAccept(context));
             }
         }
 
-        // A socket is still connected if a nonblocking, zero-byte Send call either:
-        // 1) returns successfully or 
-        // 2) throws a WAEWOULDBLOCK error code(10035)
-        public static bool IsConnected(Socket client)
+        private void HandleAccept(HttpListenerContext context)
         {
-            // This is how you can determine whether a socket is still connected.
-            var blockingState = client.Blocking;
-
-            try
+            lock (cache)
             {
-                var tmp = new byte[1];
+                PogoBotSniperInfoContainer container = new PogoBotSniperInfoContainer();
 
-                client.Blocking = false;
-                client.Send(tmp, 0, 0);
-                return true;
-            }
-            catch (SocketException e)
-            {
-                // 10035 == WSAEWOULDBLOCK
-                return e.NativeErrorCode.Equals(10035);
-            }
-            finally
-            {
-                client.Blocking = blockingState;
-            }
-        }
-
-        private static string GetIp(Socket s)
-        {
-            var remoteIpEndPoint = s.RemoteEndPoint as IPEndPoint;
-            return remoteIpEndPoint?.ToString();
-        }
-
-        public async Task FeedToClients(List<SniperInfo> sniperInfos)
-        {
-
-
-            // Remove any clients that have disconnected
-            if (GlobalSettings.ThreadPause) return;
-            _arrSocket.RemoveAll(x => !IsConnected(x.Client));
-            foreach (var target in sniperInfos)
-            {
-
-
-                foreach (var socket in _arrSocket)
-                    // Repeat for each connected client (socket held in a dynamic array)
+                // Build up the pokemon list (cant directly retrieve the MemoryCache objects)
+                foreach (KeyValuePair<string, object> pair in cache)
                 {
-                    try
-                    {
-                        var networkStream = socket.GetStream();
-                        var s = new StreamWriter(networkStream);
+                    PogoBotSniperInfo pogoInfo = pair.Value as PogoBotSniperInfo;
 
-                        s.WriteLine(JsonConvert.SerializeObject(target));
-                        s.Flush();
-                    }
-                    catch (Exception e)
+                    // It might have been really expired but MemoryCache havent removed it
+                    if (!pogoInfo.IsExpired)
                     {
-                        Log.Error($"Caught exception", e);
-                        _arrSocket.Remove(socket);
+                        container.Infos.Add(pair.Value as PogoBotSniperInfo);
+                    }
+                }
+
+                byte[] data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(container, Formatting.Indented));
+
+                context.Response.OutputStream.Write(data, 0, data.Length);
+                context.Response.OutputStream.Close();
+            }
+        }
+
+        public void Update(List<SniperInfo> infos)
+        {
+            lock (cache)
+            {
+                // Validate and convert informations
+                foreach (var info in infos)
+                {
+                    bool isUnknown = info.ExpirationTimestamp.Equals(DateTime.MinValue);
+
+                    if (!isUnknown)
+                    {
+                        cache.Add(info.ToString(), new PogoBotSniperInfo(info), new DateTimeOffset(info.ExpirationTimestamp));
                     }
                 }
             }
+        }
+
+        public bool IsWorking()
+        {
+            return httpListener.IsListening;
         }
     }
 }

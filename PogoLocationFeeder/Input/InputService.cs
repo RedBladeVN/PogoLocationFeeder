@@ -28,7 +28,6 @@ namespace PogoLocationFeeder.Input
 {
     public class InputService
     {
-
         public static readonly InputService Instance = new InputService();
 
         private InputService() { }
@@ -36,11 +35,7 @@ namespace PogoLocationFeeder.Input
         public bool ParseAndSend(string text)
         {
             List<SniperInfo> sniperInfos = MessageParser.ParseMessage(text);
-            sniperInfos.ForEach(s =>
-            {
-                s.ChannelInfo = new ChannelInfo() {server = Constants.PogoFeeder};
-                s.NeedVerification = true;
-            });
+            sniperInfos.ForEach(s => s.ChannelInfo = new ChannelInfo() { server= Constants.PogoFeeder});
             var unsentInfos = MessageCache.Instance.FindUnSentMessages(sniperInfos);
             if (GlobalSettings.IsManaged)
             {
@@ -52,7 +47,7 @@ namespace PogoLocationFeeder.Input
             if (!GlobalSettings.IsServer)
             {
 
-                Task.Run(() => ClientWriter.Instance.FeedToClients(unsentInfos));
+                Task.Run(() => ClientWriter.Instance.Update(unsentInfos));
             }
             return unsentInfos.Any();
         }
@@ -62,8 +57,9 @@ namespace PogoLocationFeeder.Input
         {
             if (GlobalSettings.IsManaged)
             {
-                PogoClient.sniperInfosToSend.Enqueue(sniperInfo);
                 MessageCache.Instance.Add(sniperInfo);
+
+                PogoClient.sniperInfosToSend.Enqueue(sniperInfo);
                 return true;
             }
             return false;

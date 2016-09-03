@@ -160,7 +160,7 @@ namespace PogoLocationFeeder
             {
                 if (!GlobalSettings.IsServer)
                 {
-                    if (!ClientWriter.Instance.Listener.Server.IsBound)
+                    if (!ClientWriter.Instance.IsWorking())
                     {
                         Log.Info("Server has lost connection. Restarting...");
                         ClientWriter.Instance.StartNet(GlobalSettings.Port);
@@ -323,7 +323,7 @@ namespace PogoLocationFeeder
                 }
                 else
                 {
-                    await ClientWriter.Instance.FeedToClients(sniperInfosToSend);
+                    ClientWriter.Instance.Update(sniperInfosToSend);
                 }
             }
         }
