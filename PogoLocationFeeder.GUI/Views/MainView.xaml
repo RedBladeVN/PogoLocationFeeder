@@ -42,9 +42,8 @@
                 <DataGridTemplateColumn>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                                <Button Height="25" Margin="0, -5"
-                                            Command="{Binding copyCoordsCommand}"
-                                            Style="{DynamicResource MaterialDesignFlatButton}" ToolTip="Copy Coordinates" Content="CC"/>
+                            <Button Height="25" Margin="0, -5" Command="{Binding copyCoordsCommand}"
+                                Style="{DynamicResource MaterialDesignFlatButton}" ToolTip="Copy Coordinates" Content="CC"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

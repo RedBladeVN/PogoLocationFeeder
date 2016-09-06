@@ -44,6 +44,14 @@
     <ApplicationIcon>Feeder.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Flurl, Version=2.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Flurl.2.2.0\lib\portable40-net40+sl5+win8+wp8+wpa81\Flurl.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Flurl.Http, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Flurl.Http.1.0.1\lib\net45\Flurl.Http.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Google.Protobuf, Version=3.0.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Protobuf.3.0.0-beta4\lib\net45\Google.Protobuf.dll</HintPath>
       <Private>True</Private>
@@ -359,7 +367,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-	<Resource Include="static\map.html" />
+    <Resource Include="static\map.html" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

@@ -101,12 +101,7 @@ namespace PogoLocationFeeder.Writers
                 // Validate and convert informations
                 foreach (var info in infos)
                 {
-                    bool isUnknown = info.ExpirationTimestamp.Equals(DateTime.MinValue);
-
-                    if (!isUnknown)
-                    {
-                        cache.Add(info.ToString(), new PogoBotSniperInfo(info), new DateTimeOffset(info.ExpirationTimestamp));
-                    }
+                    cache.Add(info.ToString(), new PogoBotSniperInfo(info), new DateTimeOffset(info.ExpirationTimestamp));
                 }
             }
         }

@@ -72,6 +72,9 @@ namespace PogoLocationFeeder
         [JsonProperty(PropertyName = "pokemon_types", Order = 8)]
         public List<object> PokemonTypes { get; set; }
 
+        [JsonProperty(PropertyName = "iv", Order = 10)]
+        public int IV { get; set; }
+
         [JsonIgnore]
         public DateTime Expiration { get; set; }
 
@@ -83,14 +86,21 @@ namespace PogoLocationFeeder
 
         public PogoBotSniperInfo(SniperInfo info)
         {
+            if (info.ExpirationTimestamp.Equals(DateTime.MinValue))
+            {
+                //info.ExpirationTimestamp = 
+                info.ExpirationTimestamp = DateTime.Now.AddMinutes(1);
+            }
+
+            IV = Convert.ToInt32(info.IV);
             Latitude = info.Latitude;
             Longitude = info.Longitude;
-            PokemonRarity = "Unknown";
+            PokemonRarity = "";
             PokemonName = info.Id.ToString();
             PokemonId = info.Id.GetHashCode();
-            EncounterId = Convert.ToBase64String(Encoding.UTF8.GetBytes(info.GetHashCode().ToString())); // MjQxNTQwOTM0MzgzMTE4NDI1Mw
-            SpawnPointId = Convert.ToBase64String(Encoding.UTF8.GetBytes(info.GetHashCode().ToString())); // 47c5e26b849
-            ExpirationJavaScript = JavaScriptTime(info.ExpirationTimestamp); // 1472874472000
+            EncounterId = Convert.ToBase64String(Encoding.UTF8.GetBytes("")); // TODO
+            SpawnPointId = Convert.ToBase64String(Encoding.UTF8.GetBytes("")); // TODO
+            ExpirationJavaScript = JavaScriptTime(info.ExpirationTimestamp);
             Expiration = info.ExpirationTimestamp;
             PokemonTypes = new List<object>();
         }

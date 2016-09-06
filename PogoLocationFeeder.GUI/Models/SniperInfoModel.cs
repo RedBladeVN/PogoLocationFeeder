@@ -21,6 +21,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -29,7 +31,7 @@ using PogoLocationFeeder.Config;
 using PogoLocationFeeder.GUI.ViewModels;
 using PogoLocationFeeder.Helper;
 using PropertyChanged;
-using Timer = System.Threading.Timer;
+using Flurl.Http;
 
 namespace PogoLocationFeeder.GUI.Models { 
 
@@ -83,8 +85,17 @@ namespace PogoLocationFeeder.GUI.Models {
             GlobalVariables.PokemonsInternal.Remove(this);
         }
 
-        public void CopyCoords()
+        public async void CopyCoords()
         {
+            // Try to change the map location
+            try
+            {
+                await "http://localhost:5500/next_loc".PostUrlEncodedAsync(new { lat = Info.Latitude, lon = Info.Longitude }).ReceiveString();
+            }
+            catch (Exception)
+            {
+            }
+
             try {
                 Clipboard.SetText(
                     $"{Info.Latitude.ToString("N6", CultureInfo.InvariantCulture).Replace(",", ".")}, {Info.Longitude.ToString("N6", CultureInfo.InvariantCulture).Replace(",", ".")}");
